@@ -102,32 +102,42 @@ def cholesky(L,b):
     return backSubstitute(transpose(L), y)
 
 
-def score_metric_extractor(match, color):
-    return match['score_breakdown'][color]['totalPoints']
-
-
-
-def calc (teams, matches):
+def calc (teams, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
     team_keys = list(team['key'] for team in teams)
 
-    opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=score_metric_extractor)
+    opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
 
     opr_x = cholesky(opr_L, opr_b)
-
     dpr_x = cholesky(opr_L, dpr_b)
 
-    for team_key, opr, dpr in zip(team_keys, opr_x, dpr_x):
-        print (team_key, opr, dpr)
+    for team, opr, dpr in zip(teams, opr_x, dpr_x):
+        metrics = team['metrics']
+        if offense_metric_name is not None:
+            metrics[offense_metric_name] = opr
+        if defense_metric_name is not None:
+            metrics[defense_metric_name] = dpr
+
+
+def score_metric_extractor(match, color):
+    return match['score_breakdown'][color]['totalPoints']
 
 
 def main():
     with open('2023misjo/teams.json', 'r') as f:
         teams = json.load(f)
+        for team in teams:
+            team['metrics'] = {}
+
     with open('2023misjo/matches.json', 'r') as f:
         all_matches = json.load(f)
     matches = [match for match in all_matches if match['comp_level'] == 'qm']
+    matches.sort(key=lambda match: match['match_number'])
 
-    calc(teams, matches)
+    calc(teams, matches, offense_metric_name='opr', metric_extractor=score_metric_extractor)
+    calc(teams, matches, defense_metric_name='dpr', metric_extractor=score_metric_extractor)
+
+    for team in teams:
+        print(team['team_number'], team['nickname'], team['metrics'])
 
 
 if __name__ == '__main__':
