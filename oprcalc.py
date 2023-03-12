@@ -2,15 +2,13 @@ from math import *
 import json
 
 
-def matrices(teams, matches):
-    print(teams)
+def matrices(teams, matches, metric_extractor=None):
     opr_A = [[0]*len(teams) for _ in range(len(teams))]
 
     opr_b = [0]*len(teams)
     dpr_b = [0]*len(teams)
 
     for match in matches:
-        print(match)
         r1 = teams.index(match['alliances']['red']['team_keys'][0])
         r2 = teams.index(match['alliances']['red']['team_keys'][1])
         r3 = teams.index(match['alliances']['red']['team_keys'][2])
@@ -42,8 +40,9 @@ def matrices(teams, matches):
         opr_A[b3][b2] += 1
         opr_A[b3][b3] += 1
 
-        rs = match['score_breakdown']['red']['totalPoints']
-        bs = match['score_breakdown']['blue']['totalPoints']
+        rs = metric_extractor(match, 'red')
+        bs = metric_extractor(match, 'blue')
+
         opr_b[r1] += rs
         opr_b[r2] += rs
         opr_b[r3] += rs
@@ -103,11 +102,15 @@ def cholesky(L,b):
     return backSubstitute(transpose(L), y)
 
 
+def score_metric_extractor(match, color):
+    return match['score_breakdown'][color]['totalPoints']
+
+
 
 def calc (teams, matches):
     team_keys = list(team['key'] for team in teams)
 
-    opr_L, opr_b, dpr_b = matrices(team_keys, matches)
+    opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=score_metric_extractor)
 
     opr_x = cholesky(opr_L, opr_b)
 
