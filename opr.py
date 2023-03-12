@@ -56,8 +56,8 @@ def matrices(teams, matches):
         opr_A[b3][b2] += 1
         opr_A[b3][b3] += 1
 
-        rs = match['alliances']['red']['score']
-        bs = match['alliances']['blue']['score']
+        rs = match['score_breakdown']['red']['totalPoints']
+        bs = match['score_breakdown']['blue']['totalPoints']
         opr_b[r1] += rs
         opr_b[r2] += rs
         opr_b[r3] += rs
