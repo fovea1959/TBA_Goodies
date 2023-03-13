@@ -1,8 +1,12 @@
+import tba_cache
+
 from math import *
-import json
 
 
 def matrices(teams, matches, metric_extractor=None):
+    if metric_extractor is None:
+        metric_extractor = score_metric_extractor
+
     opr_A = [[0]*len(teams) for _ in range(len(teams))]
 
     opr_b = [0]*len(teams)
@@ -60,10 +64,6 @@ def matrices(teams, matches, metric_extractor=None):
     return getL(opr_A), opr_b, dpr_b
 
 
-def totals(ranks):
-    return list(zip(*ranks[1:]))[3:8]
-
-
 def getL(m):
     final = [[0.0]*len(m) for _ in range(len(m))]
     for i in range(len(m)):
@@ -102,8 +102,8 @@ def cholesky(L,b):
     return backSubstitute(transpose(L), y)
 
 
-def calc (teams, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
-    team_keys = list(team['key'] for team in teams)
+def calc(teams: dict, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
+    team_keys = [team['key'] for team in teams]
 
     opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
 
@@ -123,21 +123,22 @@ def score_metric_extractor(match, color):
 
 
 def main():
-    with open('2023misjo/teams.json', 'r') as f:
-        teams = json.load(f)
+    with tba_cache.TBACache() as tba:
+        teams = tba.get_teams_at_event('2023misjo')
+
         for team in teams:
             team['metrics'] = {}
 
-    with open('2023misjo/matches.json', 'r') as f:
-        all_matches = json.load(f)
-    matches = [match for match in all_matches if match['comp_level'] == 'qm']
-    matches.sort(key=lambda match: match['match_number'])
+        all_matches = tba.get_matches_for_event('2023misjo')
+        matches = [match for match in all_matches if match['comp_level'] == 'qm']
+        matches.sort(key=lambda match: match['match_number'])
 
-    calc(teams, matches, offense_metric_name='opr', metric_extractor=score_metric_extractor)
-    calc(teams, matches, defense_metric_name='dpr', metric_extractor=score_metric_extractor)
+        calc(teams, matches, offense_metric_name='opr', metric_extractor=score_metric_extractor)
+        calc(teams, matches, defense_metric_name='dpr', metric_extractor=score_metric_extractor)
+        calc(teams, matches, offense_metric_name='opr2', defense_metric_name='dpr2')
 
-    for team in teams:
-        print(team['team_number'], team['nickname'], team['metrics'])
+        for team in teams:
+            print(team['team_number'], team['nickname'], team['metrics'])
 
 
 if __name__ == '__main__':
