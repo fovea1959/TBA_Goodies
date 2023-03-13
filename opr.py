@@ -282,9 +282,9 @@ class Gui(object):
 
     def get_event_data(self):
         try:
-            with open('2023misjo/rankings.json', 'r') as f:
-                self.__ranks = json.load(f)
-            with open('2023misjo/matches.json', 'r') as f:
+            with open('2023mimus/teams.json', 'r') as f:
+                self.__teams = json.load(f)
+            with open('2023mimus/matches.json', 'r') as f:
                 self.__matches = json.load(f)
             #self.__ranks = make_request('/api/v3/event/2023%s/rankings' % self.__event.get().lower())
             #self.__matches = make_request('/api/v3/event/2023%s/matches' % self.__event.get().lower())
@@ -307,9 +307,6 @@ class Gui(object):
         return 0
 
     def load_raw(self):
-        for rank in self.__ranks['rankings']:
-            self.__trRank.insert('', 'end', values=rank['rank'])
-
         def raw(m):
             redTeams = m['alliances']['red']['team_keys']
             blueTeams = m['alliances']['blue']['team_keys']
@@ -327,7 +324,7 @@ class Gui(object):
             self.__trMatch.insert('', 'end', values=raw(match))
 
     def calc_oprs(self):
-        teams = list(int(rank['team_key'][3:]) for rank in self.__ranks['rankings'])
+        teams = list(int(rank['key'][3:]) for rank in self.__teams)
         opr_L, opr_b, dpr_b = matrices(teams, self.__matches)
         """
         try:

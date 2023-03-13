@@ -96,6 +96,9 @@ class TBACache:
     def get_teams_at_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/teams/simple")
 
+    def get_team_statuses_at_event(self, event_key=None):
+        return self.fetch(f"/api/v3/event/{event_key}/teams/statuses")
+
     def get_matches_for_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/matches")
 

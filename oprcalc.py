@@ -1,3 +1,7 @@
+import argparse
+import logging
+import sys
+
 import tba_cache
 
 from math import *
@@ -103,6 +107,8 @@ def cholesky(L,b):
 
 
 def calc(teams: dict, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
+    if len(matches) == 0:
+        return
     team_keys = [team['key'] for team in teams]
 
     opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
@@ -122,14 +128,22 @@ def score_metric_extractor(match, color):
     return match['score_breakdown'][color]['totalPoints']
 
 
-def main():
-    with tba_cache.TBACache() as tba:
-        teams = tba.get_teams_at_event('2023misjo')
+def main(argv):
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--event", help="event key", required=True)
+    parser.add_argument("--offline", action='store_true', help="don't go to internet")
+    parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
+    args = parser.parse_args(argv)
+
+    with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
+        teams = tba.get_teams_at_event(args.event)
 
         for team in teams:
             team['metrics'] = {}
 
-        all_matches = tba.get_matches_for_event('2023misjo')
+        all_matches = tba.get_matches_for_event(args.event)
         matches = [match for match in all_matches if match['comp_level'] == 'qm']
         matches.sort(key=lambda match: match['match_number'])
 
@@ -142,4 +156,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
