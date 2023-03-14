@@ -77,7 +77,7 @@ def main(argv):
                     matches = [match for match in all_matches if match['comp_level'] == 'qm']
                     matches.sort(key=lambda match: match['match_number'])
 
-                    logging.info("processing opr for %s", event_key)
+                    logging.info ("processing opt for %s, %d teams, %d matches", event_key, len(teams_at_event), len(matches))
 
                     try:
                         # fill metrics into teams_at_event

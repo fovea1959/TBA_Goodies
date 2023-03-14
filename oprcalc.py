@@ -7,22 +7,22 @@ import tba_cache
 from math import *
 
 
-def matrices(teams, matches, metric_extractor=None):
+def matrices(team_keys, matches, metric_extractor=None):
+    opr_A = [[0] * len(team_keys) for _ in range(len(team_keys))]
+
+    opr_b = [0] * len(team_keys)
+    dpr_b = [0] * len(team_keys)
+
     if metric_extractor is None:
         metric_extractor = score_metric_extractor
 
-    opr_A = [[0]*len(teams) for _ in range(len(teams))]
-
-    opr_b = [0]*len(teams)
-    dpr_b = [0]*len(teams)
-
     for match in matches:
-        r1 = teams.index(match['alliances']['red']['team_keys'][0])
-        r2 = teams.index(match['alliances']['red']['team_keys'][1])
-        r3 = teams.index(match['alliances']['red']['team_keys'][2])
-        b1 = teams.index(match['alliances']['blue']['team_keys'][0])
-        b2 = teams.index(match['alliances']['blue']['team_keys'][1])
-        b3 = teams.index(match['alliances']['blue']['team_keys'][2])
+        r1 = team_keys.index(match['alliances']['red']['team_keys'][0])
+        r2 = team_keys.index(match['alliances']['red']['team_keys'][1])
+        r3 = team_keys.index(match['alliances']['red']['team_keys'][2])
+        b1 = team_keys.index(match['alliances']['blue']['team_keys'][0])
+        b2 = team_keys.index(match['alliances']['blue']['team_keys'][1])
+        b3 = team_keys.index(match['alliances']['blue']['team_keys'][2])
 
         opr_A[r1][r1] += 1
         opr_A[r1][r2] += 1
@@ -65,10 +65,18 @@ def matrices(teams, matches, metric_extractor=None):
         dpr_b[b2] += rs
         dpr_b[b3] += rs
 
-    return getL(opr_A), opr_b, dpr_b
+    return opr_A, opr_b, dpr_b
+
+def dumpMatrix(A, team_keys):
+    for i, t in enumerate(team_keys):
+        print("team", i, t)
 
 
-def getL(m):
+    for i, row in enumerate(A):
+        print(i,'{:8}'.format(team_keys[i]), ''.join(['{:4}'.format(item) for item in row]))
+
+
+def getL1(m):
     final = [[0.0]*len(m) for _ in range(len(m))]
     for i in range(len(m)):
         for j in range(i+1):
@@ -76,8 +84,21 @@ def getL(m):
             if i == j:
                 final[i][j] = sqrt(final[i][j])
             else:
+                if final[j][j] == 0:
+                    print("boom!", i, j, final)
                 final[i][j] /= final[j][j]
     return final
+
+
+def getL2(A):
+    # https://rosettacode.org/wiki/Cholesky_decomposition#Python
+    L = [[0.0] * len(A) for _ in range(len(A))]
+    for i in range(len(A)):
+        for j in range(i+1):
+            s = sum(L[i][k] * L[j][k] for k in range(j))
+            L[i][j] = sqrt(A[i][i] - s) if (i == j) else \
+                      (1.0 / L[j][j] * (A[i][j] - s))
+    return L
 
 
 def forwardSubstitute(m,n):
@@ -101,22 +122,36 @@ def transpose(arr):
     return [[arr[y][x] for y in range(len(arr))] for x in range(len(arr[0]))]
 
 
-def cholesky(L,b):
+def cholesky(L, b):
     y = forwardSubstitute(L, b)
     return backSubstitute(transpose(L), y)
 
 
-def calc(teams: dict, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
+def calc(teams, matches, offense_metric_name=None, defense_metric_name=None, metric_extractor=None):
     if len(matches) == 0:
         return
-    team_keys = [team['key'] for team in teams]
 
-    opr_L, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
+    team_dict = {team['key']: team for team in teams}
+    team_keys = set()
+
+    for match in matches:
+        for i in range(3):
+            team_keys.add(match['alliances']['red']['team_keys'][i])
+            team_keys.add(match['alliances']['blue']['team_keys'][i])
+    team_keys = list(team_keys)
+    team_keys.sort()
+
+    opr_A, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
+
+    # dumpMatrix(opr_A, team_keys)
+
+    opr_L = getL2(opr_A)
 
     opr_x = cholesky(opr_L, opr_b)
     dpr_x = cholesky(opr_L, dpr_b)
 
-    for team, opr, dpr in zip(teams, opr_x, dpr_x):
+    for team_key, opr, dpr in zip(team_keys, opr_x, dpr_x):
+        team = team_dict[team_key]
         metrics = team['metrics']
         if offense_metric_name is not None:
             metrics[offense_metric_name] = opr
