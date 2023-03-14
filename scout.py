@@ -82,12 +82,11 @@ def main(argv):
                     try:
                         # fill metrics into teams_at_event
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='opr')
-                        #oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
                         #oprcalc.calc(teams_at_event, matches, offense_metric_name='opr', defense_metric_name='dpr')
-                        #oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
-                        #             metric_extractor=linkpoints_metric_extractor)
-                        #oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
-                        #             metric_extractor=autochargestationpoints_metric_extractor)
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
+                                     metric_extractor=linkpoints_metric_extractor)
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
+                                     metric_extractor=autochargestationpoints_metric_extractor)
                     except ZeroDivisionError:
                         logging.info("divide by zero, looks like %s has not played enough yet", event_key)
 
