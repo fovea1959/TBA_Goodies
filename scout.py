@@ -54,6 +54,7 @@ def main(argv):
 
         competition_results = {}  # keyed by event_key
         teams = tba.get_teams_at_event(args.event)
+        teams.sort(key=lambda team: team['team_number'])
         for team in teams:
             team_key = team['key']
             team['metrics'] = {}
@@ -74,7 +75,7 @@ def main(argv):
 
                     all_matches = tba.get_matches_for_event(event_key=event_key)
 
-                    matches = [match for match in all_matches if match['comp_level'] == 'qm']
+                    matches = [match for match in all_matches if match['comp_level'] == 'qm' and match['actual_time'] is not None]
                     matches.sort(key=lambda match: match['match_number'])
 
                     logging.info ("processing opt for %s, %d teams, %d matches", event_key, len(teams_at_event), len(matches))
@@ -116,24 +117,30 @@ def main(argv):
 
         field_names = OrderedDict()
 
-        for field_name in ['team', 'event']:
+        for field_name in ['team', 'name', 'event']:
             field_names[field_name] = 1
 
+        team_dict = OrderedDict()
         for team in teams:
+            team_dict[team['key']] = team
             for metrics in team['metrics'].values():
                 for field_name in metrics.keys():
                     field_names[field_name] = 1
 
-        with open('names.csv', 'w', newline='') as file:
+        with open(args.event + '_scout.csv', 'w', newline='') as file:
             c = csv.DictWriter(file, fieldnames=field_names)
             c.writeheader()
-            for team in teams:
-                s = {'team': team['key'] }
-                c.writerow(s)
-                for event_key, metrics in team['metrics'].items():
-                    s = {'event': event_key}
-                    s.update(metrics)
+            for i, team in enumerate(teams):
+                if i > 0:
+                    c.writerow({'event': i})
+                s = {'team': team['key'], 'name': team['nickname']}
+                if len(team['metrics']) == 0:
                     c.writerow(s)
+                else:
+                    for event_key, metrics in team['metrics'].items():
+                        s['event'] = event_key
+                        s.update(metrics)
+                        c.writerow(s)
 
 
 if __name__ == '__main__':
