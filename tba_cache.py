@@ -119,12 +119,18 @@ class TBACache:
 def main(argv):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     with TBACache() as cache:
-        print(cache.fetch(url='/api/v3/event/2023misjo/teams/simple'))
-        print(cache.get_event('2023misjo'))
-        print(cache.get_teams_at_event('2023misjo'))
-        print(cache.get_matches_for_event('2023misjo'))
-        print(cache.get_event_keys_for_team('frc3620', 2023))
-        print(cache.get_event_keys_for_team('frc3620'))
+        # print(cache.fetch(url='/api/v3/event/2023misjo/teams/simple'))
+        # print(cache.get_event('2023misjo'))
+        # print(cache.get_teams_at_event('2023misjo'))
+        # print(cache.get_matches_for_event('2023misjo'))
+        event_keys = cache.get_event_keys_for_team('frc244', 2023)
+
+        for event_key in event_keys:
+            matches = cache.get_matches_for_event(event_key)
+            for match in matches:
+                print(event_key, match)
+
+        # print(cache.get_event_keys_for_team('frc3620'))
 
 
 if __name__ == '__main__':

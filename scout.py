@@ -53,7 +53,7 @@ def process(tba, main_event_key=None):
         team['metrics'] = {}
         events = tba.get_events_for_team(team_key, year)
         # find district events that start before the one we want to scout
-        events = list(filter(lambda event: event['event_type_string'] == 'District' and event['start_date'] < start_date, events))
+        events = list(filter(lambda event: event['start_date'] < start_date, events))
         events.sort(key=lambda event: event['start_date'])
         for event in events:
             event_key = event['key']
@@ -140,15 +140,16 @@ def main(argv):
         c.writeheader()
         for i, team in enumerate(teams):
             if i > 0:
-                c.writerow({'event': i})
+                c.writerow({})
             s = {'team': team['key'], 'name': team['nickname']}
             if len(team['metrics']) == 0:
                 c.writerow(s)
             else:
                 for event_key, metrics in team['metrics'].items():
-                    s['event'] = event_key
-                    s.update(metrics)
-                    c.writerow(s)
+                    s1 = { 'event': event_key }
+                    s1.update(s)
+                    s1.update(metrics)
+                    c.writerow(s1)
 
 
 if __name__ == '__main__':
