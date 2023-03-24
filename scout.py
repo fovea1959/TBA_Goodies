@@ -13,6 +13,9 @@ def linkpoints_metric_extractor(match, color):
     return match['score_breakdown'][color]['linkPoints']
 
 
+def rankingpoints_metric_extractor(match, color):
+    return match['score_breakdown'][color]['rp']
+
 
 def autochargestationpoints_metric_extractor(match, color):
     return match['score_breakdown'][color]['autoChargeStationPoints']
@@ -62,16 +65,16 @@ def process(tba, main_event_key=None):
 
             if competition_result is None:
                 teams_at_event = tba.get_teams_at_event(event_key)
-                metric_dict = {}
-                for team_at_event in teams_at_event:
-                    metric_dict[team_at_event['key']] = team_at_event['metrics'] = {}
 
                 all_matches = tba.get_matches_for_event(event_key=event_key)
-
                 matches = [match for match in all_matches if match['comp_level'] == 'qm' and match['actual_time'] is not None]
                 matches.sort(key=lambda match: match['match_number'])
 
-                logging.info ("processing opt for %s, %d teams, %d matches", event_key, len(teams_at_event), len(matches))
+                logging.info ("processing metrics for %s, %d teams, %d matches", event_key, len(teams_at_event), len(matches))
+
+                metric_dict = {}
+                for team_at_event in teams_at_event:
+                    metric_dict[team_at_event['key']] = team_at_event['metrics'] = {}
 
                 try:
                     # fill metrics into teams_at_event
@@ -79,6 +82,8 @@ def process(tba, main_event_key=None):
                     # oprcalc.calc(teams_at_event, matches, offense_metric_name='opr', defense_metric_name='dpr')
                     oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
                                  metric_extractor=linkpoints_metric_extractor)
+                    oprcalc.calc(teams_at_event, matches, offense_metric_name='rankingPoints_pr',
+                                 metric_extractor=rankingpoints_metric_extractor)
                     oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
                                  metric_extractor=autochargestationpoints_metric_extractor)
                 except ZeroDivisionError:
@@ -119,6 +124,8 @@ def main(argv):
     parser.add_argument("--offline", action='store_true', help="don't go to internet")
     parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
     args = parser.parse_args(argv)
+
+    logging.info ("invoked with %s", args)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
         teams = process(tba, args.event)
