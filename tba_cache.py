@@ -62,17 +62,18 @@ class TBACache:
 
         response = requests.get('https://www.thebluealliance.com' + url, headers=headers)
 
+        self.logger.info("got a %d for %s", response.status_code, url)
+
         # throw exception for a 4xx or 5xx
         response.raise_for_status()
 
-        if response.status_code == 304:
-            self.fetched.add(url)
-            self.logger.info("got a 304 for %s", url)
-            return cache_entry['data']
+        # check for other catastrophic codes here
 
-        # check other codes here
-
+        # and we are good!
         self.fetched.add(url)
+
+        if response.status_code == 304:
+            return cache_entry['data']
 
         data = response.json()
         self.cache_is_dirty = True
