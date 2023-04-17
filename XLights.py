@@ -14,10 +14,16 @@ class Effect:
         d = self.get_defaults()
         rv = d.copy()
         for k, v in kwargs.items():
+            logging.debug("looking to see what matches %s", k)
+            ok = False
             for k1 in d.keys():
                 if k1.endswith(f"_{k}"):
                     rv[k1] = v
+                    ok = True
+                    logging.debug("%s matches %s", k1, k)
                     break
+            if not ok:
+                logging.error("what is option %s", k)
         return rv
 
     def get_defaults(self):
@@ -252,7 +258,7 @@ def main(argv):
                 team = teams[team_key]
 
                 e0 = TextEffect(Text=str(team['team_number']), Text_YStart=16)
-                e1 = TextEffect(Text=team['nickname'], Text_YStart=-16)  #  , Text_Font='bold arial 12 windows-1252')
+                e1 = TextEffect(Text=team['nickname'], Text_YStart=-16, FONTPICKER_Text_Font='bold arial 12 windows-1252')
 
                 sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + 5, palette=color_palette)
                 sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + 5, palette=color_palette)
