@@ -1,4 +1,5 @@
 import argparse
+import copy
 import logging
 import sys
 
@@ -66,6 +67,7 @@ def matrices(team_keys, matches, metric_extractor=None):
         dpr_b[b3] += rs
 
     return opr_A, opr_b, dpr_b
+
 
 def dumpMatrix(A, team_keys):
     for i, t in enumerate(team_keys):
@@ -173,7 +175,7 @@ def main(argv):
     args = parser.parse_args(argv)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
-        teams = tba.get_teams_at_event(args.event)
+        teams = copy.deepcopy(tba.get_teams_at_event(args.event))
 
         for team in teams:
             team['metrics'] = {}

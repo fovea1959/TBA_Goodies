@@ -1,5 +1,6 @@
 import argparse
 import logging
+import copy
 import csv
 import sys
 
@@ -29,7 +30,7 @@ def main(argv):
     logging.info ("invoked with %s", args)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
-        team_array = tba.get_teams_at_event(args.event)
+        team_array = copy.deepcopy(tba.get_teams_at_event(args.event))
 
         team_dict = {}
         for team in team_array:
