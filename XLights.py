@@ -258,10 +258,15 @@ def main(argv):
                 team = teams[team_key]
 
                 e0 = TextEffect(Text=str(team['team_number']), Text_YStart=16)
-                e1 = TextEffect(Text=team['nickname'], Text_YStart=-16, FONTPICKER_Text_Font='bold arial 12 windows-1252')
+                e1 = TextEffect(
+                    Text=team['nickname'],
+                    Text_YStart=-16,
+                    FONTPICKER_Text_Font='bold arial 12 windows-1252',
+                    Text_Dir='left'
+                )
 
-                sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + 5, palette=color_palette)
-                sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + 5, palette=color_palette)
+                sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + 3, palette=color_palette)
+                sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + 3, palette=color_palette)
 
             x = sequence.xml()
             # ET.dump(x)
