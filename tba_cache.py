@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import sys
@@ -80,6 +81,7 @@ class TBACache:
 
         self.cache[url] = {
             'data': data,
+            'date': datetime.datetime.now().astimezone().isoformat(' '),
             'etag': response.headers['etag']
         }
 
@@ -115,6 +117,18 @@ class TBACache:
 
     def get_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}")
+
+    def get_district_rankings(self, district_key=None):
+        return self.fetch(f"/api/v3/district/{district_key}/rankings")
+
+    def get_district_events(self, district_key=None):
+        return self.fetch(f"/api/v3/district/{district_key}/events")
+
+    def get_team_media(self, team_key=None, year=None):
+        return self.fetch(f"/api/v3/team/{team_key}/media/{year}")
+
+    def get_matches_for_team_at_event(self, team_key=None, event_key=None):
+        return self.fetch(f"/api/v3/team/{team_key}/event/{event_key}/matches")
 
 
 def main(argv):
