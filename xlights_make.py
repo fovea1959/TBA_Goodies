@@ -9,12 +9,15 @@ import XLights
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="event key", required=True)
+    parser.add_argument("--field", help="field name", required=True)
     args = parser.parse_args(argv)
 
     with open(args.event + '_xlights.json', 'r') as file:
         o = json.load(file)
         teams = o['teams']
         matches = o['matches']
+
+        pane_length = 3.0;
 
         for match in matches:
             color = match['color']
@@ -24,9 +27,32 @@ def main(argv):
 
             sequence = XLights.Sequence(layers=2)
 
-            logo = XLights.PicturesEffect(Pictures_Filename="FIRSTicon_RGB_withTM-resized.png")
-            sequence.add_effect(0, logo, 0, 3.0, palette=color_palette)
+            sequence.add_effect(0,
+                                XLights.PicturesEffect(Pictures_Filename="FIRSTicon_RGB_withTM-resized.png"),
+                                sequence.length, sequence.length+pane_length, palette=color_palette)
 
+            sequence.add_effect(0,
+                                XLights.TextEffect(Text="Hey!"),
+                                sequence.length, sequence.length+pane_length, palette=color_palette)
+
+            t0 = sequence.length
+            e0 = XLights.TextEffect(Text=args.field, Text_YStart=16)
+            e1 = XLights.TextEffect(Text="Field!", Text_YStart=-16)
+            sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
+            sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
+
+            t0 = sequence.length
+            e0 = XLights.TextEffect(Text="It's", Text_YStart=16)
+            e1 = XLights.TextEffect(Text="us...", Text_YStart=-16)
+            sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
+            sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
+
+            t0 = sequence.length
+            c = color.capitalize()
+            e0 = XLights.TextEffect(Text=f"The {c}", Text_YStart=16, FONTPICKER_Text_Font='bold arial 12 windows-1252')
+            e1 = XLights.TextEffect(Text="Alliance.", Text_YStart=-16, FONTPICKER_Text_Font='bold arial 12 windows-1252')
+            sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
+            sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
             for team_key in members:
                 t0 = sequence.length
@@ -41,8 +67,8 @@ def main(argv):
                     Text_Dir='left'
                 )
 
-                sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + 3, palette=color_palette)
-                sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + 3, palette=color_palette)
+                sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
+                sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
             x = sequence.xml()
             # ET.dump(x)
