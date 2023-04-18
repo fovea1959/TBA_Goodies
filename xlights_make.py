@@ -83,8 +83,9 @@ def main(argv):
                 sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
             x = sequence.xml()
-            # ET.dump(x)
-            break
+
+            output_filename = f"{args.event}_{number:02}.xsq"
+            x.write(output_filename)
 
 
 if __name__ == '__main__':

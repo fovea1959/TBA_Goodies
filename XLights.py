@@ -171,8 +171,9 @@ class Sequence:
                 x_l.append(er.xml(i))
 
         ET.indent(doc, ' ', 0)
-        ET.dump(doc)
-        return doc
+        # ET.dump(doc)
+        tree = ET.ElementTree(doc)
+        return tree
 
 
 class EffectReference:
