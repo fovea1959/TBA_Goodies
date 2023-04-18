@@ -1,6 +1,8 @@
 import argparse
 import json
 import logging
+import os
+import re
 import sys
 
 import XLights
@@ -11,6 +13,8 @@ def main(argv):
     parser.add_argument("--event", help="event key", required=True)
     parser.add_argument("--field", help="field name", required=True)
     args = parser.parse_args(argv)
+
+    year = re.sub(r'^.*(\d{4}).*$', r'\1', args.event)
 
     with open(args.event + '_xlights.json', 'r') as file:
         o = json.load(file)
@@ -55,7 +59,14 @@ def main(argv):
             sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
             for team_key in members:
-                t0 = sequence.length
+                avatar_filename = f"avatars/avatar_{year}_{team_key}.png"
+                if os.path.isfile(avatar_filename):
+                    e0 = XLights.MarqueeEffect()
+                    e1 = XLights.PicturesEffect(Pictures_Filename=avatar_filename)
+
+                    t0 = sequence.length
+                    sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
+                    sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
                 team = teams[team_key]
 
@@ -67,6 +78,7 @@ def main(argv):
                     Text_Dir='left'
                 )
 
+                t0 = sequence.length
                 sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
                 sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
