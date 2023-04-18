@@ -218,7 +218,7 @@ class Palette:
         return x
 
 
-def test(argv):
+def main(argv):
 
     e = TextEffect(Text='Test Text')
     print(e.xml_text())
@@ -231,46 +231,6 @@ def test(argv):
     s.add_effect(0, e, 1, 2, red)
     print(s.layers)
     print(s.palettes)
-
-
-def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--event", help="event key", required=True)
-    args = parser.parse_args(argv)
-
-    with open(args.event + '_xlights.json', 'r') as file:
-        o = json.load(file)
-        teams = o['teams']
-        matches = o['matches']
-
-        for match in matches:
-            color = match['color']
-            number = match['match']
-            members = match['alliance']
-
-            sequence = Sequence(layers=2)
-
-            color_palette = Palette('#ff0000' if color == "red" else '#0000ff')
-
-            for team_key in members:
-                t0 = sequence.length
-
-                team = teams[team_key]
-
-                e0 = TextEffect(Text=str(team['team_number']), Text_YStart=16)
-                e1 = TextEffect(
-                    Text=team['nickname'],
-                    Text_YStart=-16,
-                    FONTPICKER_Text_Font='bold arial 12 windows-1252',
-                    Text_Dir='left'
-                )
-
-                sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + 3, palette=color_palette)
-                sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + 3, palette=color_palette)
-
-            x = sequence.xml()
-            # ET.dump(x)
-            break
 
 
 if __name__ == '__main__':
