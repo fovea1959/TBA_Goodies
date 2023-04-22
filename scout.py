@@ -44,7 +44,7 @@ def fillInChargeStation(match):
     return rv
 
 
-def process(tba, main_event_key=None, load_avatars=False):
+def process(tba, main_event_key=None):
     main_event = tba.get_event(main_event_key)
     year = main_event['year']
     start_date = main_event['start_date']
@@ -54,9 +54,6 @@ def process(tba, main_event_key=None, load_avatars=False):
     teams.sort(key=lambda team: team['team_number'])
     for team in teams:
         team_key = team['key']
-
-        if load_avatars:
-            media_list = tba.get_team_media(team_key=team_key, year=year)
 
         team['metrics'] = {}
         events = tba.get_events_for_team(team_key, year)
@@ -126,7 +123,6 @@ def main(argv):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="event key", required=True)
-    parser.add_argument("--avatars", action="store_true", help="download avatars (pre-load the cache with them")
     parser.add_argument("--offline", action='store_true', help="don't go to internet")
     parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
     args = parser.parse_args(argv)
@@ -134,7 +130,7 @@ def main(argv):
     logging.info ("invoked with %s", args)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
-        teams = process(tba, args.event, load_avatars=args.avatars)
+        teams = process(tba, args.event)
 
     field_names = OrderedDict()
 
@@ -167,4 +163,3 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-

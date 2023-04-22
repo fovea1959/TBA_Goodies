@@ -1,3 +1,4 @@
+import base64
 import datetime
 import json
 import logging
@@ -129,6 +130,19 @@ class TBACache:
 
     def get_matches_for_team_at_event(self, team_key=None, event_key=None):
         return self.fetch(f"/api/v3/team/{team_key}/event/{event_key}/matches")
+
+    def make_avatar(self, team_key=None, year=None):
+        media_list = self.get_team_media(team_key=team_key, year=year)
+        if media_list is not None:
+            for media in media_list:
+                if media['type'] == 'avatar':
+                    fk = media['foreign_key']
+                    b64 = media.get('details', {}).get('base64Image', None)
+                    if b64 is not None:
+                        content = base64.b64decode(b64)
+                        fn = f"avatars/{fk}.png"
+                        with open(fn, "wb") as f:
+                            f.write(content)
 
 
 def main(argv):

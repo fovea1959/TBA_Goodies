@@ -70,6 +70,7 @@ def main(argv):
 
                 team = teams[team_key]
 
+                t0 = sequence.length
                 e0 = XLights.TextEffect(Text=str(team['team_number']), Text_YStart=16)
                 e1 = XLights.TextEffect(
                     Text=team['nickname'],
@@ -77,14 +78,12 @@ def main(argv):
                     FONTPICKER_Text_Font='bold arial 12 windows-1252',
                     Text_Dir='left'
                 )
-
-                t0 = sequence.length
                 sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
                 sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
             x = sequence.xml()
 
-            output_filename = f"{args.event}_{number:02}.xsq"
+            output_filename = f"{args.event}_{number:03}.xsq"
             x.write(output_filename)
 
 
