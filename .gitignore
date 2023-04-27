@@ -1,3 +1,7 @@
 *.xsq
 *.csv
 avatars/
+*_xlights.json
+*.ods
+creds.py
+tba_cache.json

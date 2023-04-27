@@ -119,11 +119,17 @@ class TBACache:
     def get_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}")
 
-    def get_district_rankings(self, district_key=None):
-        return self.fetch(f"/api/v3/district/{district_key}/rankings")
+    def get_events_simple(self, year=None):
+        return self.fetch(f"/api/v3/events/{year}/simple")
 
     def get_district_events(self, district_key=None):
         return self.fetch(f"/api/v3/district/{district_key}/events")
+
+    def get_district_rankings(self, district_key=None):
+        return self.fetch(f"/api/v3/district/{district_key}/rankings")
+
+    def get_district_teams_simple(self, district_key=None):
+        return self.fetch(f"/api/v3/district/{district_key}/teams/simple")
 
     def get_team_media(self, team_key=None, year=None):
         return self.fetch(f"/api/v3/team/{team_key}/media/{year}")
