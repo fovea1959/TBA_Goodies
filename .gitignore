@@ -5,3 +5,4 @@ avatars/
 *.ods
 creds.py
 tba_cache.json
+.idea/
