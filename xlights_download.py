@@ -13,7 +13,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="event key", required=True)
-    parser.add_argument("--home", help="team key for home team", default="frc3620", required=True)
+    parser.add_argument("--home", help="team key for home team", default="frc3620")
     parser.add_argument("--offline", action='store_true', help="don't go to internet")
     parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
     args = parser.parse_args(argv)
