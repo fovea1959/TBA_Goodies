@@ -1,8 +1,8 @@
 *.xsq
 *.csv
-avatars/
+avatars*/
 *_xlights.json
 *.ods
 creds.py
-tba_cache.json
+tba_cache*.json
 .idea/
