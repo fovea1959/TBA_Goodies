@@ -37,7 +37,7 @@ class Effect:
                 if type(v) is str:
                     v = v.replace(',', '&comma;')
                 t.append(f"{k}={v}")
-        x.text = ",".join(t)
+        x.text = "B_CHOICE_BufferStyle=Per Model Default," + ",".join(t)
         return x
 
 
@@ -161,7 +161,7 @@ class Sequence:
             e.append(f.xml())
 
         # zap and replace the effect references
-        e = doc.find("./ElementEffects/Element[@type='model']")
+        e = doc.find("./ElementEffects/Element[@name='Half Screens']")
         for e_sub in list(e):
             e.remove(e_sub)
         for l in self.layers:
