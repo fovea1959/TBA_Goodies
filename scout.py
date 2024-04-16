@@ -82,12 +82,13 @@ def process(tba, main_event_key=None):
                     # fill metrics into teams_at_event
                     oprcalc.calc(teams_at_event, matches, offense_metric_name='opr')
                     # oprcalc.calc(teams_at_event, matches, offense_metric_name='opr', defense_metric_name='dpr')
-                    oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
-                                 metric_extractor=linkpoints_metric_extractor)
                     oprcalc.calc(teams_at_event, matches, offense_metric_name='rankingPoints_pr',
-                                 metric_extractor=rankingpoints_metric_extractor)
-                    oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
-                                 metric_extractor=autochargestationpoints_metric_extractor)
+                                metric_extractor=rankingpoints_metric_extractor)
+                    if year == 2023:
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
+                                metric_extractor=linkpoints_metric_extractor)
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
+                                metric_extractor=autochargestationpoints_metric_extractor)
                 except ZeroDivisionError:
                     # this should no longer happen!
                     logging.info("divide by zero, looks like %s has not played enough yet", event_key)
@@ -95,12 +96,13 @@ def process(tba, main_event_key=None):
                 competition_result = { team['key']: team['metrics'] for team in teams_at_event}
 
                 # add more to competition_result[team_key] here
-                for match in matches:
-                    csr = fillInChargeStation(match)
-                    for csr_team_key in csr.keys():
-                        for name in csr[csr_team_key].keys():
-                            v = competition_result[csr_team_key].get(name, '') + csr[csr_team_key][name]
-                            competition_result[csr_team_key][name] = v
+                if year == 2023:
+                    for match in matches:
+                        csr = fillInChargeStation(match)
+                        for csr_team_key in csr.keys():
+                            for name in csr[csr_team_key].keys():
+                                v = competition_result[csr_team_key].get(name, '') + csr[csr_team_key][name]
+                                competition_result[csr_team_key][name] = v
 
                 # get info from team statuses
                 team_statuses: dict = tba.get_team_statuses_at_event(event_key)
