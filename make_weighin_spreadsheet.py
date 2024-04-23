@@ -43,18 +43,24 @@ def main(argv):
             if comp_level != 'qm':
                 continue
 
-            json_find_results = (jsonpath_parse('*..team_keys').find(match))
-            # print(json_find_results)
             match_number = match['match_number']
-            for json_find_result in json_find_results:
-                for team_key in json_find_result.value:
-                    team = team_dict[team_key]
-                    team['last_match'] = max(team.get('last_match', -1), match_number)
+
+            alliance_dicts = (jsonpath_parse('alliances').find(match))
+            # print(alliance_dicts)
+            for alliance_dict in alliance_dicts:
+                # print('alliance_dict', alliance_dict)
+                for color, v in alliance_dict.value.items():
+                    for team_key in v.get('team_keys', []):
+                        # print(match_number, color, team_key)
+                        team = team_dict[team_key]
+                        if match_number > team.get('last_match', 0):
+                            team['last_match'] = match_number
+                            team['last_color'] = color
 
     teams = list(team_dict.values())
     teams.sort(key=lambda team: team['team_number'])
     with open(args.event + '_weighin.csv', 'w', newline='', encoding='utf-8') as file:
-        c = csv.DictWriter(file, fieldnames=['team_number','nickname', 'last_match'], extrasaction='ignore')
+        c = csv.DictWriter(file, fieldnames=['team_number','nickname', 'last_match', 'last_color'], extrasaction='ignore')
         c.writeheader()
         for team in teams:
             c.writerow(team)
