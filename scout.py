@@ -22,6 +22,14 @@ def autochargestationpoints_metric_extractor(match, color):
     return match['score_breakdown'][color]['autoChargeStationPoints']
 
 
+def teleopAmpNotePoints_metric_extractor(match, color):
+    return match['score_breakdown'][color]['teleopAmpNotePoints']
+
+
+def foulPoints_metric_extractor(match, color):
+    return match['score_breakdown'][color]['foulPoints']
+
+
 def other(color):
     if color == 'red':
         return 'blue'
@@ -89,6 +97,12 @@ def process(tba, main_event_key=None):
                                 metric_extractor=linkpoints_metric_extractor)
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
                                 metric_extractor=autochargestationpoints_metric_extractor)
+                    elif year == 2024:
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='teleopAmpNotePoints_pr',
+                                metric_extractor=teleopAmpNotePoints_metric_extractor)
+                        oprcalc.calc(teams_at_event, matches, offense_metric_name='foulPoints_pr',
+                                metric_extractor=foulPoints_metric_extractor)
+
                 except ZeroDivisionError:
                     # this should no longer happen!
                     logging.info("divide by zero, looks like %s has not played enough yet", event_key)
@@ -146,7 +160,7 @@ def main(argv):
             for field_name in metrics.keys():
                 field_names[field_name] = 1
 
-    with open(args.event + '_scout.csv', 'w', newline='') as file:
+    with open(args.event + '_scout.csv', 'w', newline='', encoding='utf-8') as file:
         c = csv.DictWriter(file, fieldnames=field_names)
         c.writeheader()
         for i, team in enumerate(teams):
