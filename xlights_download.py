@@ -21,7 +21,7 @@ def main(argv):
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
         year = re.sub(r'^.*(\d{4}).*$', r'\1', args.event)
 
-        match_array = tba.get_matches_for_team_at_event(team_key=args.home, event_key=args.event)
+        match_array = tba.get_team_matches_at_event(team_key=args.home, event_key=args.event)
 
         partners = set()
         our_matches = []

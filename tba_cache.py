@@ -20,11 +20,9 @@ class TBACache:
         self.cache_is_dirty = False
         self.fetched = set()
 
-        input_file_exists = False
         try:
             with open(cache_file_name, 'r') as file:
                 self.cache = json.load(file)
-            input_file_exists = True
         except Exception as err:
             self.logger.warning("enable to read cache %s, error = %s", cache_file_name, err)
 
@@ -103,6 +101,9 @@ class TBACache:
     def get_team_statuses_at_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/teams/statuses")
 
+    def get_team_status_at_event(self, event_key=None, team_key=None):
+        return self.fetch(f"/api/v3/team/{team_key}/event/{event_key}/status")
+
     def get_matches_for_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/matches")
 
@@ -134,8 +135,29 @@ class TBACache:
     def get_team_media(self, team_key=None, year=None):
         return self.fetch(f"/api/v3/team/{team_key}/media/{year}")
 
-    def get_matches_for_team_at_event(self, team_key=None, event_key=None):
+    def get_team_matches_at_event(self, team_key=None, event_key=None):
         return self.fetch(f"/api/v3/team/{team_key}/event/{event_key}/matches")
+
+    def get_team_awards_at_event(self, team_key=None, event_key=None):
+        return self.fetch(f"/api/v3/team/{team_key}/event/{event_key}/awards")
+
+    def get_team_districts(self, team_key=None):
+        return self.fetch(f"/api/v3/team/{team_key}/districts")
+
+    def get_team_years_participated(self, team_key=None):
+        return self.fetch(f"/api/v3/team/{team_key}/years_participated")
+
+    def get_team_event_keys(self, team_key=None, year=None):
+        if year is None:
+            return self.fetch(f"/api/v3/team/{team_key}/events/keys")
+        else:
+            return self.fetch(f"/api/v3/team/{team_key}/events/{year}/keys")
+
+    def get_team_events(self, team_key=None, year=None):
+        if year is None:
+            return self.fetch(f"/api/v3/team/{team_key}/events")
+        else:
+            return self.fetch(f"/api/v3/team/{team_key}/events/{year}")
 
     def make_avatar(self, team_key=None, year=None):
         media_list = self.get_team_media(team_key=team_key, year=year)
