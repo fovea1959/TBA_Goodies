@@ -53,7 +53,7 @@ def main(argv):
 
     teams = list(team_dict.values())
     teams.sort(key=lambda team: team['team_number'])
-    with open(args.event + '_weighin.csv', 'w', newline='') as file:
+    with open(args.event + '_weighin.csv', 'w', newline='', encoding='utf-8') as file:
         c = csv.DictWriter(file, fieldnames=['team_number','nickname', 'last_match'], extrasaction='ignore')
         c.writeheader()
         for team in teams:
