@@ -18,6 +18,12 @@ def matrices(team_keys, matches, metric_extractor=None):
         metric_extractor = score_metric_extractor
 
     for match in matches:
+        rs = metric_extractor(match, 'red')
+        bs = metric_extractor(match, 'blue')
+
+        if rs is None or bs is None:
+            continue
+
         r1 = team_keys.index(match['alliances']['red']['team_keys'][0])
         r2 = team_keys.index(match['alliances']['red']['team_keys'][1])
         r3 = team_keys.index(match['alliances']['red']['team_keys'][2])
@@ -48,9 +54,6 @@ def matrices(team_keys, matches, metric_extractor=None):
         opr_A[b3][b1] += 1
         opr_A[b3][b2] += 1
         opr_A[b3][b3] += 1
-
-        rs = metric_extractor(match, 'red')
-        bs = metric_extractor(match, 'blue')
 
         opr_b[r1] += rs
         opr_b[r2] += rs
@@ -145,7 +148,7 @@ def calc(teams, matches, offense_metric_name=None, defense_metric_name=None, met
 
     opr_A, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
 
-    # dumpMatrix(opr_A, team_keys)
+    dumpMatrix(opr_A, team_keys)
 
     opr_L = getL2(opr_A)
 
@@ -162,7 +165,11 @@ def calc(teams, matches, offense_metric_name=None, defense_metric_name=None, met
 
 
 def score_metric_extractor(match, color):
-    return match['score_breakdown'][color]['totalPoints']
+    try:
+        return match['score_breakdown'][color]['totalPoints']
+    except TypeError as e:
+        # probably not subscriptable
+        return None
 
 
 def main(argv):
