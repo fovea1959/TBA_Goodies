@@ -1,11 +1,26 @@
 import argparse
 import copy
+import csv
+import json
 import logging
 import sys
 
 import tba_cache
 
 from math import *
+
+
+class MetricExtractor:
+
+    def __init__(self, metric_name):
+        self.metric_name = metric_name
+
+    def extract(self, match, color):
+        try:
+            return match['score_breakdown'][color][self.metric_name]
+        except TypeError as e:
+            # probably not subscriptable
+            return None
 
 
 def matrices(team_keys, matches, metric_extractor=None):
@@ -15,11 +30,11 @@ def matrices(team_keys, matches, metric_extractor=None):
     dpr_b = [0] * len(team_keys)
 
     if metric_extractor is None:
-        metric_extractor = score_metric_extractor
+        metric_extractor = MetricExtractor('totalPoints')
 
     for match in matches:
-        rs = metric_extractor(match, 'red')
-        bs = metric_extractor(match, 'blue')
+        rs = metric_extractor.extract(match, 'red')
+        bs = metric_extractor.extract(match, 'blue')
 
         if rs is None or bs is None:
             continue
@@ -75,7 +90,6 @@ def matrices(team_keys, matches, metric_extractor=None):
 def dumpMatrix(A, team_keys):
     for i, t in enumerate(team_keys):
         print("team", i, t)
-
 
     for i, row in enumerate(A):
         print(i,'{:8}'.format(team_keys[i]), ''.join(['{:4}'.format(item) for item in row]))
@@ -148,7 +162,7 @@ def calc(teams, matches, offense_metric_name=None, defense_metric_name=None, met
 
     opr_A, opr_b, dpr_b = matrices(team_keys, matches, metric_extractor=metric_extractor)
 
-    dumpMatrix(opr_A, team_keys)
+    # dumpMatrix(opr_A, team_keys)
 
     opr_L = getL2(opr_A)
 
@@ -164,40 +178,83 @@ def calc(teams, matches, offense_metric_name=None, defense_metric_name=None, met
             metrics[defense_metric_name] = dpr
 
 
-def score_metric_extractor(match, color):
-    try:
-        return match['score_breakdown'][color]['totalPoints']
-    except TypeError as e:
-        # probably not subscriptable
-        return None
-
-
 def main(argv):
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-
+    logging.info("argv = %s", argv)
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="event key", required=True)
     parser.add_argument("--offline", action='store_true', help="don't go to internet")
     parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
+
+    parser.add_argument("--offensive", action="append")
+    parser.add_argument("--defensive", action="append")
     args = parser.parse_args(argv)
+    logging.info("args = %s", args)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
         teams = copy.deepcopy(tba.get_teams_at_event(args.event))
+        teams = sorted(teams, key=lambda t: t['team_number'])
+        # print(json.dumps(teams,indent=2,sort_keys=True))
 
         for team in teams:
             team['metrics'] = {}
 
         all_matches = tba.get_matches_for_event(args.event)
         matches = [match for match in all_matches if match['comp_level'] == 'qm']
+        logging.info ('%d teams, %d matches', len(teams), len(matches))
         matches.sort(key=lambda match: match['match_number'])
 
-        calc(teams, matches, offense_metric_name='opr', metric_extractor=score_metric_extractor)
-        calc(teams, matches, defense_metric_name='dpr', metric_extractor=score_metric_extractor)
+        print (json.dumps(matches[0], indent=2, sort_keys=True))
+
+        if args.offensive is not None:
+            for s in args.offensive:
+                s_a = s.split("/")
+                if len(s_a) == 1:
+                    s_a.append(s_a[0])
+                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), offense_metric_name=s_a[1])
+
+        if args.defensive is not None:
+            for s in args.defensive:
+                s_a = s.split("/")
+                if len(s_a) == 1:
+                    s_a.append(s_a[0])
+                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
+
+        """
+        calc(teams, matches, offense_metric_name='opr', metric_extractor=MetricExtractor('totalPoints'))
+        calc(teams, matches, defense_metric_name='dpr', metric_extractor=MetricExtractor('totalPoints'))
+
+        calc(teams, matches, offense_metric_name='autoCoralPoints', metric_extractor=MetricExtractor('autoCoralPoints'))
+        calc(teams, matches, offense_metric_name='autoPoints', metric_extractor=MetricExtractor('autoPoints'))
+        calc(teams, matches, offense_metric_name='algaePoints', metric_extractor=MetricExtractor('algaePoints'))
+        """
         calc(teams, matches, offense_metric_name='opr2', defense_metric_name='dpr2')
 
         for team in teams:
             print(team['team_number'], team['nickname'], team['metrics'])
 
+        with open(f'{args.event}_stats.csv', 'w', newline='') as f:
+            field_name_set = set()
+            for team in teams:
+                for name in team['metrics'].keys():
+                    field_name_set.add(name)
+
+            field_names = ['team', 'name']
+            field_names.extend(field_name_set)
+            logging.info('field names = %s', field_names)
+            w = csv.DictWriter(f=f, fieldnames=field_names)
+            w.writeheader()
+            for team in teams:
+                o = {
+                    'team': team['team_number'],
+                    'name': team['nickname']
+                }
+                o.update(team['metrics'])
+                w.writerow(o)
+
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    a = sys.argv[1:]
+    if len(a) == 0:
+        a = '--offensive=totalPoints --offensive=autoPoints --offensive=teleopPoints --offensive=algaePoints --offensive=autoCoralPoints --offensive=teleopCoralPoints --defensive=totalPoints/dpr --event=2025misjo'.split(' ')
+    main(a)
