@@ -24,17 +24,20 @@ def process(tba: tba_cache.TBACache, team_key=None):
         for event in events:
             event_key = event['key']
             team_status_at_event = tba.get_team_status_at_event(team_key=team_key, event_key=event_key)
-
-            q = team_status_at_event['qual']
+            print(f'team_key = {team_key}, event_key={event_key}, status={team_status_at_event}')
             qual_status = ""
-            if q is not None:
-                num_teams = q['num_teams']
-                rank = q['ranking']['rank']
-                qual_status = f'Ranking: {rank}/{num_teams}'
+            if team_status_at_event is not None:
+                q = team_status_at_event['qual']
+                if q is not None:
+                    num_teams = q['num_teams']
+                    rank = q['ranking']['rank']
+                    qual_status = f'Ranking: {rank}/{num_teams}'
 
-                record_data = q['ranking']['record']
-                if record_data is not None:
-                    qual_status = f'Record: {record_data["wins"]}-{record_data["losses"]}-{record_data["ties"]}, {qual_status}'
+                    record_data = q['ranking']['record']
+                    if record_data is not None:
+                        qual_status = f'Record: {record_data["wins"]}-{record_data["losses"]}-{record_data["ties"]}, {qual_status}'
+            else:
+                team_status_at_event = {}
 
 
             event_data = {
@@ -42,9 +45,9 @@ def process(tba: tba_cache.TBACache, team_key=None):
                 'start_date': event['start_date'],
                 "awards": [],
                 "award_types" : [],
-                "status": team_status_at_event['overall_status_str'],
-                "alliance_status": team_status_at_event['alliance_status_str'],
-                "playoff_status": team_status_at_event['playoff_status_str'],
+                "status": team_status_at_event.get('overall_status_str'),
+                "alliance_status": team_status_at_event.get('alliance_status_str'),
+                "playoff_status": team_status_at_event.get('playoff_status_str'),
                 "qual_status": qual_status
             }
             this_year_data['events'].append(event_data)

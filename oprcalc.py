@@ -17,7 +17,10 @@ class MetricExtractor:
 
     def extract(self, match, color):
         try:
-            return match['score_breakdown'][color][self.metric_name]
+            v = match['score_breakdown'][color][self.metric_name]
+            if type(v) is bool:
+                v = 1 if v else 0
+            return v
         except TypeError as e:
             # probably not subscriptable
             return None
@@ -205,49 +208,42 @@ def main(argv):
 
         print (json.dumps(matches[0], indent=2, sort_keys=True))
 
+        field_names = ['team', 'name']
         if args.offensive is not None:
-            for s in args.offensive:
-                s_a = s.split("/")
-                if len(s_a) == 1:
-                    s_a.append(s_a[0])
-                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), offense_metric_name=s_a[1])
+            for v in args.offensive:
+                comma_split = v.split(",")
+                for s in comma_split:
+                    s_a = s.split(":")
+                    if len(s_a) == 1:
+                        s_a.append(s_a[0])
+                    field_names.append(s_a[1])
+                    calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), offense_metric_name=s_a[1])
 
         if args.defensive is not None:
-            for s in args.defensive:
-                s_a = s.split("/")
-                if len(s_a) == 1:
-                    s_a.append(s_a[0])
-                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
+            for v in args.defensive:
+                comma_split = v.split(",")
+                for s in comma_split:
+                    s_a = s.split(":")
+                    if len(s_a) == 1:
+                        s_a.append(s_a[0])
+                    field_names.append(s_a[1])
+                    calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
 
         """
         calc(teams, matches, offense_metric_name='opr', metric_extractor=MetricExtractor('totalPoints'))
         calc(teams, matches, defense_metric_name='dpr', metric_extractor=MetricExtractor('totalPoints'))
-
-        calc(teams, matches, offense_metric_name='autoCoralPoints', metric_extractor=MetricExtractor('autoCoralPoints'))
-        calc(teams, matches, offense_metric_name='autoPoints', metric_extractor=MetricExtractor('autoPoints'))
-        calc(teams, matches, offense_metric_name='algaePoints', metric_extractor=MetricExtractor('algaePoints'))
-        """
         calc(teams, matches, offense_metric_name='opr2', defense_metric_name='dpr2')
+        """
 
         for team in teams:
             print(team['team_number'], team['nickname'], team['metrics'])
 
         with open(f'{args.event}_stats.csv', 'w', newline='') as f:
-            field_name_set = set()
-            for team in teams:
-                for name in team['metrics'].keys():
-                    field_name_set.add(name)
-
-            field_names = ['team', 'name']
-            field_names.extend(field_name_set)
             logging.info('field names = %s', field_names)
             w = csv.DictWriter(f=f, fieldnames=field_names)
             w.writeheader()
             for team in teams:
-                o = {
-                    'team': team['team_number'],
-                    'name': team['nickname']
-                }
+                o = {'team': team['team_number'], 'name': team['nickname']}
                 o.update(team['metrics'])
                 w.writerow(o)
 
@@ -256,5 +252,5 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     a = sys.argv[1:]
     if len(a) == 0:
-        a = '--offensive=totalPoints --offensive=autoPoints --offensive=teleopPoints --offensive=algaePoints --offensive=autoCoralPoints --offensive=teleopCoralPoints --defensive=totalPoints/dpr --event=2025misjo'.split(' ')
+        a = '--offensive=totalPoints,autoPoints,teleopPoints --offensive=algaePoints,autoCoralPoints,teleopCoralPoints --offensive=autoBonusAchieved,bargeBonusAchieved,coralBonusAchieved --defensive=totalPoints:dpr --event=2025misjo'.split(' ')
     main(a)

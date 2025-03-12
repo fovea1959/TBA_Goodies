@@ -52,6 +52,12 @@ def fillInChargeStation(match):
     return rv
 
 
+def rank_teams_at_event(teams_at_event, metric_name):
+    sorted_by = sorted(teams_at_event, key=lambda t: t['metrics'][metric_name], reverse=True)
+    for i, team in enumerate(sorted_by):
+        team['metrics'][metric_name + "_ranking"] = f'{str(i+1)}/{str(len(sorted_by))}'
+
+
 def process(tba, main_event_key=None):
     main_event = tba.get_event(main_event_key)
     year = main_event['year']
@@ -86,26 +92,34 @@ def process(tba, main_event_key=None):
                 for team_at_event in teams_at_event:
                     metric_dict[team_at_event['key']] = team_at_event['metrics'] = {}
 
-                try:
-                    # fill metrics into teams_at_event
-                    oprcalc.calc(teams_at_event, matches, offense_metric_name='opr')
-                    # oprcalc.calc(teams_at_event, matches, offense_metric_name='opr', defense_metric_name='dpr')
-                    oprcalc.calc(teams_at_event, matches, offense_metric_name='rankingPoints_pr',
-                                metric_extractor=rankingpoints_metric_extractor)
+                if len(matches) > 0:
+                    stuff_to_grab = [
+                        (oprcalc.MetricExtractor('totalPoints'), 'opr', 'dpr'),
+                        (oprcalc.MetricExtractor('rp'), 'rankingPoints', None)
+                    ]
+                    # ranking points extractor?
                     if year == 2023:
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
-                                metric_extractor=linkpoints_metric_extractor)
+                                     metric_extractor=linkpoints_metric_extractor)
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
-                                metric_extractor=autochargestationpoints_metric_extractor)
+                                     metric_extractor=autochargestationpoints_metric_extractor)
                     elif year == 2024:
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='teleopAmpNotePoints_pr',
-                                metric_extractor=teleopAmpNotePoints_metric_extractor)
+                                     metric_extractor=teleopAmpNotePoints_metric_extractor)
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='foulPoints_pr',
-                                metric_extractor=foulPoints_metric_extractor)
+                                     metric_extractor=foulPoints_metric_extractor)
 
-                except ZeroDivisionError:
-                    # this should no longer happen!
-                    logging.info("divide by zero, looks like %s has not played enough yet", event_key)
+                    for me, omn, dmn in stuff_to_grab:
+                        # fill metrics into teams_at_event
+                        oprcalc.calc(teams_at_event, matches, metric_extractor=me, offense_metric_name=omn, defense_metric_name=dmn)
+
+                        if omn is not None:
+                            # need to look for the ranking for the omn measure
+                            rank_teams_at_event(teams_at_event, omn)
+
+                        if dmn is not None:
+                            # need to look for the ranking for the dmn measure
+                            rank_teams_at_event(teams_at_event, dmn)
 
                 competition_result = { team['key']: team['metrics'] for team in teams_at_event}
 
