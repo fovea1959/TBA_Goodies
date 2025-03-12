@@ -52,8 +52,8 @@ def fillInChargeStation(match):
     return rv
 
 
-def rank_teams_at_event(teams_at_event, metric_name):
-    sorted_by = sorted(teams_at_event, key=lambda t: t['metrics'][metric_name], reverse=True)
+def rank_teams_at_event(teams_at_event, metric_name, descending_order=True):
+    sorted_by = sorted(teams_at_event, key=lambda t: t['metrics'][metric_name], reverse=descending_order)
     for i, team in enumerate(sorted_by):
         team['metrics'][metric_name + "_ranking"] = f'{str(i+1)}/{str(len(sorted_by))}'
 
@@ -69,13 +69,14 @@ def process(tba, main_event_key=None):
     for team in teams:
         team_key = team['key']
 
-        team['metrics'] = {}
+        team['metrics'] = { }
         events = tba.get_events_for_team(team_key, year)
         # find district events that start before the one we want to scout
         events = list(filter(lambda event: event['start_date'] < start_date, events))
         events.sort(key=lambda event: event['start_date'])
         for event in events:
             event_key = event['key']
+            event_name = event['short_name']
 
             competition_result = competition_results.get(event_key, None)
 
@@ -90,36 +91,47 @@ def process(tba, main_event_key=None):
 
                 metric_dict = {}
                 for team_at_event in teams_at_event:
-                    metric_dict[team_at_event['key']] = team_at_event['metrics'] = {}
+                    metric_dict[team_at_event['key']] = team_at_event['metrics'] = { 'event_name': event_name }
 
                 if len(matches) > 0:
                     stuff_to_grab = [
-                        (oprcalc.MetricExtractor('totalPoints'), 'opr', 'dpr'),
-                        (oprcalc.MetricExtractor('rp'), 'rankingPoints', None)
+                        (oprcalc.MetricExtractor('totalPoints'), True, 'opr', 'dpr')
                     ]
-                    # ranking points extractor?
                     if year == 2023:
+                        # needs work
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='linkPoints_pr',
                                      metric_extractor=linkpoints_metric_extractor)
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='autoChargeStationPoints_pr',
                                      metric_extractor=autochargestationpoints_metric_extractor)
                     elif year == 2024:
+                        # needs work
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='teleopAmpNotePoints_pr',
                                      metric_extractor=teleopAmpNotePoints_metric_extractor)
                         oprcalc.calc(teams_at_event, matches, offense_metric_name='foulPoints_pr',
                                      metric_extractor=foulPoints_metric_extractor)
+                    elif year == 2025:
+                        stuff_to_grab.extend([
+                            (oprcalc.MetricExtractor('autoPoints'), True, 'autoPoints', None),
+                            (oprcalc.MetricExtractor('teleopPoints'), True, 'teleopPoints', None),
+                            (oprcalc.MetricExtractor('algaePoints'), True, 'algaePoints', None),
+                            (oprcalc.MetricExtractor('autoCoralPoints'), True, 'autoCoralPoints', None),
+                            (oprcalc.MetricExtractor('teleopCoralPoints'), True, 'teleopCoralPoints', None),
+                            (oprcalc.MetricExtractor('autoBonusAchieved'), True, 'autoBonusAchieved', None),
+                            (oprcalc.MetricExtractor('bargeBonusAchieved'), True, 'bargeBonusAchieved', None),
+                            (oprcalc.MetricExtractor('coralBonusAchieved'), True, 'coralBonusAchieved', None),
+                        ])
 
-                    for me, omn, dmn in stuff_to_grab:
+                    for me, descending_order, omn, dmn in stuff_to_grab:
                         # fill metrics into teams_at_event
                         oprcalc.calc(teams_at_event, matches, metric_extractor=me, offense_metric_name=omn, defense_metric_name=dmn)
 
                         if omn is not None:
                             # need to look for the ranking for the omn measure
-                            rank_teams_at_event(teams_at_event, omn)
+                            rank_teams_at_event(teams_at_event, omn, descending_order=descending_order)
 
                         if dmn is not None:
                             # need to look for the ranking for the dmn measure
-                            rank_teams_at_event(teams_at_event, dmn)
+                            rank_teams_at_event(teams_at_event, dmn, descending_order=descending_order)
 
                 competition_result = { team['key']: team['metrics'] for team in teams_at_event}
 
@@ -164,7 +176,7 @@ def main(argv):
 
     field_names = OrderedDict()
 
-    for field_name in ['team', 'name', 'event']:
+    for field_name in ['team', 'name', 'event', 'event_name']:
         field_names[field_name] = 1
 
     team_dict = OrderedDict()

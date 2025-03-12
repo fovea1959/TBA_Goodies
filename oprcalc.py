@@ -229,12 +229,6 @@ def main(argv):
                     field_names.append(s_a[1])
                     calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
 
-        """
-        calc(teams, matches, offense_metric_name='opr', metric_extractor=MetricExtractor('totalPoints'))
-        calc(teams, matches, defense_metric_name='dpr', metric_extractor=MetricExtractor('totalPoints'))
-        calc(teams, matches, offense_metric_name='opr2', defense_metric_name='dpr2')
-        """
-
         for team in teams:
             print(team['team_number'], team['nickname'], team['metrics'])
 
