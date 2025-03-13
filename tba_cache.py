@@ -96,7 +96,7 @@ class TBACache:
             logging.info("don't need to write cache")
 
     def get_teams_at_event(self, event_key=None):
-        return self.fetch(f"/api/v3/event/{event_key}/teams/simple")
+        return self.fetch(f"/api/v3/event/{event_key}/teams")
 
     def get_team_statuses_at_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/teams/statuses")
