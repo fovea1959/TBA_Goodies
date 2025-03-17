@@ -188,12 +188,15 @@ def main(argv):
     parser.add_argument("--offline", action='store_true', help="don't go to internet")
     parser.add_argument("--lazy", action='store_true', help="only go to internet if not in cache")
 
+    parser.add_argument("--default-stats", action=argparse.BooleanOptionalAction)
     parser.add_argument("--offensive", action="append")
     parser.add_argument("--defensive", action="append")
     args = parser.parse_args(argv)
     logging.info("args = %s", args)
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
+        event = tba.get_event(args.event)
+        year = int(event['year'])
         teams = copy.deepcopy(tba.get_teams_at_event(args.event))
         teams = sorted(teams, key=lambda t: t['team_number'])
         # print(json.dumps(teams,indent=2,sort_keys=True))
@@ -206,31 +209,42 @@ def main(argv):
         logging.info ('%d teams, %d matches', len(teams), len(matches))
         matches.sort(key=lambda match: match['match_number'])
 
-        print (json.dumps(matches[0], indent=2, sort_keys=True))
+        # print (json.dumps(matches[0], indent=2, sort_keys=True))
 
         field_names = ['team', 'name']
+
+        offensive = []
+        if args.default_stats is None or args.default_stats:
+            offensive.append('totalPoints,autoPoints,teleopPoints')
+
+            if year == 2025:
+                offensive.append('algaePoints,autoCoralPoints,teleopCoralPoints')
+                offensive.append('autoBonusAchieved,bargeBonusAchieved,coralBonusAchieved')
+
         if args.offensive is not None:
-            for v in args.offensive:
-                comma_split = v.split(",")
-                for s in comma_split:
-                    s_a = s.split(":")
-                    if len(s_a) == 1:
-                        s_a.append(s_a[0])
-                    field_names.append(s_a[1])
-                    calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), offense_metric_name=s_a[1])
+            offensive.extend(args.offensive)
+        for v in offensive:
+            comma_split = v.split(",")
+            for s in comma_split:
+                s_a = s.split(":")
+                if len(s_a) == 1:
+                    s_a.append(s_a[0])
+                field_names.append(s_a[1])
+                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), offense_metric_name=s_a[1])
 
+        defensive = []
+        if args.default_stats is None or not args.default_stats:
+            defensive.append('totalPoints:dpr')
         if args.defensive is not None:
-            for v in args.defensive:
-                comma_split = v.split(",")
-                for s in comma_split:
-                    s_a = s.split(":")
-                    if len(s_a) == 1:
-                        s_a.append(s_a[0])
-                    field_names.append(s_a[1])
-                    calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
-
-        for team in teams:
-            print(team['team_number'], team['nickname'], team['metrics'])
+            defensive.extend(args.defensive)
+        for v in defensive:
+            comma_split = v.split(",")
+            for s in comma_split:
+                s_a = s.split(":")
+                if len(s_a) == 1:
+                    s_a.append(s_a[0])
+                field_names.append(s_a[1])
+                calc(teams, matches, metric_extractor=MetricExtractor(s_a[0]), defense_metric_name=s_a[1])
 
         with open(f'{args.event}_stats.csv', 'w', newline='') as f:
             logging.info('field names = %s', field_names)
@@ -244,7 +258,4 @@ def main(argv):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    a = sys.argv[1:]
-    if len(a) == 0:
-        a = '--offensive=totalPoints,autoPoints,teleopPoints --offensive=algaePoints,autoCoralPoints,teleopCoralPoints --offensive=autoBonusAchieved,bargeBonusAchieved,coralBonusAchieved --defensive=totalPoints:dpr --event=2025misjo'.split(' ')
-    main(a)
+    main(sys.argv[1:])
