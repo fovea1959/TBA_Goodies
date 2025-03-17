@@ -19,6 +19,7 @@ def main(argv):
 
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
         team_array = copy.deepcopy(tba.get_teams_at_event(args.event))
+        logging.info ("got %d teams", len(team_array))
 
         output_filename = f'{args.event}_teams.json'
         with open(output_filename, 'w') as f:
