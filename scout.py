@@ -176,7 +176,7 @@ def main(argv):
 
     field_names = OrderedDict()
 
-    for field_name in ['team', 'name', 'event', 'event_name']:
+    for field_name in ['team', 'name', 'event', 'event_name', 'overall_status_str']:
         field_names[field_name] = 1
 
     team_dict = OrderedDict()
