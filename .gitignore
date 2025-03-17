@@ -4,5 +4,6 @@ avatars*/
 *_xlights.json
 *.ods
 creds.py
+*.db
 tba_cache*.json
 .idea/

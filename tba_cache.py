@@ -1,51 +1,50 @@
 import base64
 import datetime
-import json
 import logging
 import sys
 
-import creds
-
 import requests
+
+from sqlalchemy import create_engine
+
+from sqlalchemy.orm import sessionmaker
+
+import creds
+from tba_entities import TBAData
 
 
 class TBACache:
 
-    def __init__(self, offline=False, lazy=False, cache_file_name='tba_cache.json'):
+    def __init__(self, offline=False, lazy=False, db_file_name='tba.db', echo=False):
         self.logger = logging.getLogger(__name__)
-        self.cache_file_name = cache_file_name
+        self.db_file_name = db_file_name
+        self.already_fetched : dict[str,TBAData] = {}
         self.offline = offline
         self.lazy = lazy
-        self.cache = dict()
-        self.cache_is_dirty = False
-        self.fetched = set()
-
-        try:
-            with open(cache_file_name, 'r') as file:
-                self.cache = json.load(file)
-        except Exception as err:
-            self.logger.warning("enable to read cache %s, error = %s", cache_file_name, err)
+        self.engine = create_engine(f'sqlite:///{db_file_name}', echo=echo)
+        self.session = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_tb):
-        self.done()
         return False
 
     def fetch(self, url=None):
-        cache_entry = self.cache.get(url, None)
+        cache_entry = self.already_fetched.get(url, None)
 
-        if url in self.fetched:
-            # already fetched this session
-            self.logger.info("already fetched %s", url)
-            return cache_entry['data']
-
-        etag = None
         if cache_entry is not None:
+            return cache_entry.data
+
+        if self.session is None:
+            self.session = sessionmaker(bind=self.engine)()
+
+        existing_tba_data = self.session.get(TBAData, url)
+        etag = None
+        if existing_tba_data is not None:
             if self.offline or self.lazy:
-                return cache_entry['data']
-            etag = cache_entry['etag']
+                return existing_tba_data.data
+            etag = existing_tba_data.etag
         else:
             if self.offline:
                 # offline and missing
@@ -70,30 +69,24 @@ class TBACache:
         # check for other catastrophic codes here
 
         # and we are good!
-        self.fetched.add(url)
 
         if response.status_code == 304:
-            return cache_entry['data']
+            return existing_tba_data.data
 
-        data = response.json()
-        self.cache_is_dirty = True
+        tba_data = TBAData(
+            url=url,
+            etag=response.headers['etag'],
+            date=datetime.datetime.now().astimezone(),
+            data_json=response.content
+        )
+        self.already_fetched[url] = tba_data
+        self.session.add(tba_data)
+        self.session.commit()
 
-        self.cache[url] = {
-            'data': data,
-            'date': datetime.datetime.now().astimezone().isoformat(' '),
-            'etag': response.headers['etag']
-        }
-
-        return response.json()
+        return tba_data.data
 
     def done(self):
-        if self.cache_is_dirty:
-            logging.info("writing cache")
-            # TODO need to move the existing file first
-            with open (self.cache_file_name, 'w') as file:
-                json.dump(self.cache, file, indent=1)
-        else:
-            logging.info("don't need to write cache")
+        pass
 
     def get_teams_at_event(self, event_key=None):
         return self.fetch(f"/api/v3/event/{event_key}/teams")
@@ -177,11 +170,11 @@ def main(argv):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     with TBACache() as cache:
         # print(cache.fetch(url='/api/v3/event/2023misjo/teams/simple'))
-        # print(cache.get_event('2023misjo'))
+        # print(cache.get_event('2025misjo'))
         # print(cache.get_teams_at_event('2023misjo'))
         # print(cache.get_matches_for_event('2023misjo'))
-        event_keys = cache.get_event_keys_for_team('frc244', 2023)
 
+        event_keys = cache.get_event_keys_for_team('frc3620', 2025)
         for event_key in event_keys:
             matches = cache.get_matches_for_event(event_key)
             for match in matches:
