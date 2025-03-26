@@ -80,6 +80,9 @@ class TBACache:
             data_json=response.content
         )
         self.already_fetched[url] = tba_data
+        if existing_tba_data is not None:
+            self.session.delete(existing_tba_data)
+
         self.session.add(tba_data)
         self.session.commit()
 
