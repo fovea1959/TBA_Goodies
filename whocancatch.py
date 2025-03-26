@@ -32,6 +32,7 @@ def main(argv):
                 got_another.append(team['team_key'])
 
         for team in got_another:
+            pass
 
 
 
