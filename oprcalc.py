@@ -1,27 +1,37 @@
 import argparse
 import copy
 import csv
-import json
 import logging
 import sys
+
+import jsonpath_ng
 
 import tba_cache
 
 from math import *
+
+logger = logging.getLogger(__name__)
 
 
 class MetricExtractor:
 
     def __init__(self, metric_name):
         self.metric_name = metric_name
+        self.jsonpath_expr = jsonpath_ng.parse(metric_name)
 
     def extract(self, match, color):
         try:
-            v = match['score_breakdown'][color][self.metric_name]
+            values = self.jsonpath_expr.find(match['score_breakdown'][color])
+            if len(values) == 0:
+                return None
+            if len(values) > 1:
+                raise ValueError(f"got too many values for {self.metric_name}")
+            v = values[0].value
             if type(v) is bool:
                 v = 1 if v else 0
             return v
         except TypeError as e:
+            logger.warning("took type error for %s", self.metric_name, exc_info=e)
             # probably not subscriptable
             return None
 

@@ -95,7 +95,7 @@ def process(tba, main_event_key=None):
 
                 if len(matches) > 0:
                     stuff_to_grab = [
-                        (oprcalc.MetricExtractor('totalPoints'), True, 'opr', 'dpr')
+                        (oprcalc.MetricExtractor('totalPoints'), True, 'opr', 'dpr', True)
                     ]
                     if year == 2023:
                         # needs work
@@ -111,17 +111,29 @@ def process(tba, main_event_key=None):
                                      metric_extractor=foulPoints_metric_extractor)
                     elif year == 2025:
                         stuff_to_grab.extend([
-                            (oprcalc.MetricExtractor('autoPoints'), True, 'autoPoints', None),
-                            (oprcalc.MetricExtractor('teleopPoints'), True, 'teleopPoints', None),
-                            (oprcalc.MetricExtractor('algaePoints'), True, 'algaePoints', None),
-                            (oprcalc.MetricExtractor('autoCoralPoints'), True, 'autoCoralPoints', None),
-                            (oprcalc.MetricExtractor('teleopCoralPoints'), True, 'teleopCoralPoints', None),
-                            (oprcalc.MetricExtractor('autoBonusAchieved'), True, 'autoBonusAchieved', None),
-                            (oprcalc.MetricExtractor('bargeBonusAchieved'), True, 'bargeBonusAchieved', None),
-                            (oprcalc.MetricExtractor('coralBonusAchieved'), True, 'coralBonusAchieved', None),
+                            (oprcalc.MetricExtractor('autoPoints'), True, 'autoPoints', None, True),
+                            (oprcalc.MetricExtractor('teleopPoints'), True, 'teleopPoints', None, True),
+                            (oprcalc.MetricExtractor('algaePoints'), True, 'algaePoints', None, True),
+                            (oprcalc.MetricExtractor('autoCoralPoints'), True, 'autoCoralPoints', None, True),
+                            (oprcalc.MetricExtractor('teleopCoralPoints'), True, 'teleopCoralPoints', None, True),
+                            (oprcalc.MetricExtractor('autoBonusAchieved'), True, 'autoBonusAchieved', None, True),
+                            (oprcalc.MetricExtractor('bargeBonusAchieved'), True, 'bargeBonusAchieved', None, True),
+                            (oprcalc.MetricExtractor('coralBonusAchieved'), True, 'coralBonusAchieved', None, True),
+                        ])
+                    elif year == 2026:
+                        stuff_to_grab.extend([
+                            (oprcalc.MetricExtractor('hubScore.totalPoints'), True, 'hubTotalPoints', None, True),
+                            (oprcalc.MetricExtractor('totalAutoPoints'), True, 'autoPoints', None, True),
+                            (oprcalc.MetricExtractor('hubScore.autoPoints'), True, 'hubAutoPoints', None, True),
+                            (oprcalc.MetricExtractor('totalTeleopPoints'), True, 'teleopPoints', None, True),
+                            (oprcalc.MetricExtractor('hubScore.teleopPoints'), True, 'hubTeleopPoints', None, True),
+                            (oprcalc.MetricExtractor('totalTowerPoints'), True, 'totalTowerPoints', None, True),
+                            (oprcalc.MetricExtractor('foulPoints'), True, None, 'AllianceFoulPoints', False),
+                            (oprcalc.MetricExtractor('majorFoulCount'), True, 'majorFoulCount', None, False),
+                            (oprcalc.MetricExtractor('minorFoulCount'), True, 'minorFoulCount', None, False),
                         ])
 
-                    for me, descending_order, omn, dmn in stuff_to_grab:
+                    for me, descending_order, omn, dmn, do_rank in stuff_to_grab:
                         # fill metrics into teams_at_event
                         oprcalc.calc(teams_at_event, matches, metric_extractor=me, offense_metric_name=omn, defense_metric_name=dmn)
 
