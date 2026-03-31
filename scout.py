@@ -53,7 +53,7 @@ def fillInChargeStation(match):
 
 
 def rank_teams_at_event(teams_at_event, metric_name, descending_order=True):
-    sorted_by = sorted(teams_at_event, key=lambda t: t['metrics'][metric_name], reverse=descending_order)
+    sorted_by = sorted(teams_at_event, key=lambda t: t['metrics'].get(metric_name, -1000), reverse=descending_order)
     for i, team in enumerate(sorted_by):
         team['metrics'][metric_name + "_ranking"] = f'{str(i+1)}/{str(len(sorted_by))}'
 

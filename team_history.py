@@ -4,6 +4,7 @@ import logging
 import sys
 
 import jsonpath_ng
+from jsonpath_ng import DatumInContext
 
 import tba_cache
 
@@ -13,6 +14,17 @@ class JsonpathCache(dict):
 
 
 jsonpath_cache = JsonpathCache()
+
+
+def get_jsonpath_item (j : list[DatumInContext], default_value=None):
+    if j is None:
+        return default_value
+    if len(j) == 0:
+        return default_value
+    elif len(j) == 1:
+        return j[0].value
+    else:
+        raise Exception("item has too many elements")
 
 
 def process(tba: tba_cache.TBACache, team_key=None):
@@ -48,13 +60,7 @@ def process(tba: tba_cache.TBACache, team_key=None):
             else:
                 team_status_at_event = {}
 
-            playoff_record_j = jsonpath_cache['playoff.record'].find(team_status_at_event)
-            if len(playoff_record_j) == 1:
-                playoff_record = playoff_record_j[0].value
-            elif len(playoff_record_j) == 0:
-                playoff_record = {}
-            else:
-                raise Exception()
+            playoff_record = get_jsonpath_item(jsonpath_cache['playoff.record'].find(team_status_at_event), {})
 
             print("qr>", json.dumps(qual_record, sort_keys=True))
             print("pr>", json.dumps(playoff_record, sort_keys=True))
@@ -75,11 +81,12 @@ def process(tba: tba_cache.TBACache, team_key=None):
                 'playoff_record': playoff_record,
                 "qual_status": qual_status
             }
-            this_year_data['events'].append(event_data)
 
             for award in tba.get_team_awards_at_event(team_key=team_key, event_key=event_key):
                 event_data['awards'].append(award['name'])
                 event_data['award_types'].append(award['award_type'])
+
+            this_year_data['events'].append(event_data)
 
     districts = tba.get_team_districts(team_key=team_key)
     for district in districts:
@@ -96,7 +103,6 @@ def process(tba: tba_cache.TBACache, team_key=None):
 
     with open(f'{team_key}_history.json', 'w') as f:
         json.dump(year_data, f, indent=1, sort_keys=True)
-
 
 
 def main(argv):
