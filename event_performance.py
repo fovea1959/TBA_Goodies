@@ -1,6 +1,7 @@
 import argparse
 import copy
 import csv
+import json
 import logging
 import sys
 
@@ -28,6 +29,7 @@ def main(argv):
     all_jsonpath_expr = jsonpath_ng.parse('$..*')
     team_keys_jsonpath_expr = jsonpath_ng.parse('team_keys')
     values = []
+    match_summaries = []
     with tba_cache.TBACache(offline=args.offline, lazy=args.lazy) as tba:
         matches = tba.get_matches_for_event(event_key=args.event)
         for match in matches:
@@ -45,12 +47,21 @@ def main(argv):
                         team_values = copy.deepcopy(alliance_values)
                         team_values['team'] = team.removeprefix("frc")
                         values.append(team_values)
+            if match['comp_level'] == 'qm':
+                ms = []
+                for color in ('blue', 'red'):
+                    score = match['score_breakdown'][color]['total_points']
+                    ms.append(score)
+                all_match_scores.append(ms)
 
     values.sort(key = lambda x: x.get('time'))
     with open(args.event + '_event.csv', 'w', newline='', encoding='utf-8') as file:
         c = csv.DictWriter(file, fieldnames=field_names, extrasaction='ignore')
         c.writeheader()
         c.writerows(values)
+
+    with open(args.event + '_event.json', 'w') as file:
+        json.dump(all_match_scores, file, indent=1)
 
 
 if __name__ == '__main__':

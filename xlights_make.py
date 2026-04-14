@@ -12,6 +12,8 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="event key", required=True)
     parser.add_argument("--field", help="field name", required=True)
+    parser.add_argument("--template", help="path to XLights template", default="template_sign1.xsq")
+    parser.add_argument("--output-dir", help="path to output directory", default=".")
     args = parser.parse_args(argv)
 
     year = re.sub(r'^.*(\d{4}).*$', r'\1', args.event)
@@ -81,9 +83,10 @@ def main(argv):
                 sequence.add_effect(layer_index=0, effect=e0, start=t0, end=t0 + pane_length, palette=color_palette)
                 sequence.add_effect(layer_index=1, effect=e1, start=t0, end=t0 + pane_length, palette=color_palette)
 
-            x = sequence.xml()
+            x = sequence.xml(template=args.template)
 
-            output_filename = f"{args.event}_{number:03}.xsq"
+            output_filename = f"{args.output_dir}/{args.event}_{number:03}.xsq"
+            logging.info("Writing to %s", output_filename)
             x.write(output_filename)
 
 
