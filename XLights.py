@@ -7,9 +7,17 @@ import sys
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
 
+# TODO!!!!
+TODO = """
+save a stripped version of xml to use when doing output, otherwise multiple calls
+to sequence.xml_tree tank
+
+need to make sure a <displayElement> is inserted when adding a Model
+"""
+
 
 class Palette:
-    def __init__(self, xml_text=None, *colors):
+    def __init__(self, xml_text=None, colors=[]):
         # zero based
         self.checked = set()
         self.colors = {}
@@ -35,7 +43,7 @@ class Palette:
 
                 logging.error("don't recognize '%s=%s'", k, v)
         else:
-            for i, c in enumerate(*colors):
+            for i, c in enumerate(colors):
                 self.colors[i] = c
                 self.checked.add(i)
 
@@ -73,7 +81,7 @@ class Effect:
         for nvpair in xml_text.split(","):
             k, v = nvpair.split('=', 1)
             # TODO handle &comma
-            self.set_prop(key=k, value=v)
+            self.props[k] = v
 
     def set_prop(self, force=False, key=None, value=None):
         logging.debug("looking to see what matches %s", key)
@@ -176,13 +184,14 @@ class PicturesEffect(Effect):
 
 class EffectReference:
     def __init__(self, sequence: 'Sequence' = None, xml_element: ET.Element = None, effect: Effect = None, name=None, start=None, end=None, palette: Palette = None):
+        assert sequence is not None
         self.sequence = sequence
         if xml_element is None:
             self.xml_element = ET.Element('Effect')
             self.effect = effect
             self.name = name
-            self.start = start * 1000
-            self.end = end * 1000
+            self.start = start
+            self.end = end
             self.palette = palette
         else:
             # TODO need to handle id and selected
@@ -246,7 +255,7 @@ class Model:
                     layer.append(effect_ref)
                 to_remove.append(layer_xml)
             for layer_xml in to_remove:
-                effects_layers.remove(layer_xml)
+                xml_element.remove(layer_xml)
         else:
             self.xml_element = Element('Element', { 'name': name, 'type': 'model'})
 
@@ -255,15 +264,25 @@ class Model:
         assert self.xml_element.attrib.get("type") == "model"
 
     def xml(self):
-        for layer in self.layers:
+        print('**** start')
+        print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
+        ET.dump(self.xml_element)
+        for i, layer in enumerate(self.layers):
             layer_xml_element = Element('EffectLayer')
+            self.xml_element.append(layer_xml_element)
             for effectReference in layer:
                 layer_xml_element.append(effectReference.xml())
+            print(f"** after adding layer {i}")
+            print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
+            ET.dump(self.xml_element)
+        print('**** end')
+        print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
+        ET.dump(self.xml_element)
         return self.xml_element
 
 
 class Sequence:
-    def __init__(self, layers=1):
+    def __init__(self):
         self.palettes = []
         self.palettes_xml_root = None
         self.effects = []
@@ -272,6 +291,8 @@ class Sequence:
         self.element_effects_xml_root = None
 
         self.xml_doc = None
+
+        self.length = 0
 
     def load(self, file: str = None):
         tree = ET.parse(file)
@@ -298,36 +319,44 @@ class Sequence:
                 self.models[model.name] = model
                 e.remove(e1)
 
-        # TODO check to see if any effects are still strings
+        for i in range(len(self.effects)):
+            if type(self.effects[i]) == str:
+                self.effects[i] = Effect(xml_text=self.effects[i])
 
 
-    def add_effect(self, layer_name=None, layer_index=None, effect=None, start=None, end=None, palette=None):
+    def add_effect(self, model_name=None, layer_index=None, effect=None, start=None, end=None, palette=None):
         if effect not in self.effects:
             self.effects.append(effect)
-        effect_index = self.effects.index(effect)
 
         if palette not in self.palettes:
             self.palettes.append(palette)
-        palette_index = self.palettes.index(palette)
 
         name = type(effect).__name__
         if name[-6:] == "Effect":
             name = name[:-6]
 
-        self.layers[layer_index].append(
-            EffectReference(effect_index=effect_index, name=name, start=start, end=end, palette_index=palette_index)
+        model = self.models.get(model_name)
+        if model is None:
+            model = Model(sequence=self, name=model_name)
+            self.models[model_name] = model
+
+        # layer_index is one based!
+        while len(model.layers) < layer_index:
+            model.layers.append([])      # get enough layers
+        layer = model.layers[layer_index-1]
+
+        layer.append(
+            EffectReference(sequence=self, effect=effect, name=name, start=start, end=end, palette=palette)
         )
 
-        self.length = max(self.length, end)
 
-    def xml_text(self):
+    def xml_tree(self) -> ET.ElementTree:
         # update the sequence length
         e = self.xml_doc.find("./head/sequenceDuration")
-        # e.text = str(self.length)  ## TOOD
+        e.text = str(self.length)
 
         # add the color palettes
         e = self.palettes_xml_root
-        # https://stackoverflow.com/a/37336234/17887564
         for p in self.palettes:
             e.append(p.xml())
 
@@ -349,9 +378,16 @@ class Sequence:
 
 def main(argv):
     sequence = Sequence()
-    sequence.load("Test Template.xsq")
-    ET.dump(sequence.xml_text())
+    sequence.load("py_template.xsq")
 
+    effect = TextEffect(Text='3620')
+    palette = Palette(colors=('#FF0000', '#00FF00'))
+    sequence.add_effect(model_name="Matrix", layer_index=1, effect=effect, palette=palette, start=0, end=10000)
+
+    sequence.length = 10.0
+    xml_tree = sequence.xml_tree()
+    xml_tree.write('xlights_test.xsq')
+    ET.dump(xml_tree)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
