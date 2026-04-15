@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import logging
 import re
@@ -9,15 +10,12 @@ from xml.etree.ElementTree import Element
 
 # TODO!!!!
 TODO = """
-save a stripped version of xml to use when doing output, otherwise multiple calls
-to sequence.xml_tree tank
-
 need to make sure a <displayElement> is inserted when adding a Model
 """
 
 
 class Palette:
-    def __init__(self, xml_text=None, colors=[]):
+    def __init__(self, *, xml_text=None, colors=[]):
         # zero based
         self.checked = set()
         self.colors = {}
@@ -63,7 +61,7 @@ class Palette:
 
 
 class Effect:
-    def __init__(self, xml_text=None, **kwargs):
+    def __init__(self, *, xml_text=None, **kwargs):
         self.defaults = self.get_defaults()
         self.attribute_names = list(self.defaults.keys())
         if xml_text is not None:
@@ -83,7 +81,7 @@ class Effect:
             # TODO handle &comma
             self.props[k] = v
 
-    def set_prop(self, force=False, key=None, value=None):
+    def set_prop(self, *, force=False, key=None, value=None):
         logging.debug("looking to see what matches %s", key)
         ok = False
         if force or key in self.attribute_names:
@@ -183,7 +181,7 @@ class PicturesEffect(Effect):
 
 
 class EffectReference:
-    def __init__(self, sequence: 'Sequence' = None, xml_element: ET.Element = None, effect: Effect = None, name=None, start=None, end=None, palette: Palette = None):
+    def __init__(self, *, sequence: 'Sequence' = None, xml_element: ET.Element = None, effect: Effect = None, name=None, start=None, end=None, palette: Palette = None):
         assert sequence is not None
         self.sequence = sequence
         if xml_element is None:
@@ -233,15 +231,15 @@ class EffectReference:
 
 
 class Model:
-    def __init__(self, sequence: 'Sequence' = None, xml_element: ET.Element = None, name: str = None):
+    def __init__(self, *, sequence: 'Sequence' = None, xml_element: ET.Element = None, name: str = None):
         self.sequence = sequence
         self.layers = []
         self.name = name
         if xml_element is not None:
             self.xml_element = xml_element
-            self.name = xml_element.attrib.get('name')
+            self.name = self.xml_element.attrib.get('name')
 
-            effects_layers = xml_element.findall('./EffectLayer')
+            effects_layers = self.xml_element.findall('./EffectLayer')
             logging.info("model %s has %d layers", self.name, len(effects_layers))
             to_remove = []
             for i, layer_xml in enumerate(effects_layers):
@@ -255,64 +253,60 @@ class Model:
                     layer.append(effect_ref)
                 to_remove.append(layer_xml)
             for layer_xml in to_remove:
-                xml_element.remove(layer_xml)
+                self.xml_element.remove(layer_xml)
         else:
             self.xml_element = Element('Element', { 'name': name, 'type': 'model'})
-
 
         assert self.xml_element.attrib.get("name") is not None
         assert self.xml_element.attrib.get("type") == "model"
 
     def xml(self):
+        rv = copy.deepcopy(self.xml_element)
         print('**** start')
         print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
-        ET.dump(self.xml_element)
+        ET.dump(rv)
         for i, layer in enumerate(self.layers):
             layer_xml_element = Element('EffectLayer')
-            self.xml_element.append(layer_xml_element)
+            rv.append(layer_xml_element)
             for effectReference in layer:
                 layer_xml_element.append(effectReference.xml())
             print(f"** after adding layer {i}")
             print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
-            ET.dump(self.xml_element)
+            ET.dump(rv)
         print('**** end')
         print(json.dumps(self.layers, indent=1, default=lambda x: str(x)))
-        ET.dump(self.xml_element)
-        return self.xml_element
-
+        ET.dump(rv)
+        return rv
 
 class Sequence:
     def __init__(self):
         self.palettes = []
-        self.palettes_xml_root = None
         self.effects = []
-        self.effects_xml_root = None
         self.models = {}
-        self.element_effects_xml_root = None
 
         self.xml_doc = None
 
         self.length = 0
 
-    def load(self, file: str = None):
+    def load(self, *, file: str = None):
         tree = ET.parse(file)
         self.xml_doc = tree.getroot()
 
         self.palettes = []
-        self.palettes_xml_root = e = self.xml_doc.find("./ColorPalettes")
+        e = self.xml_doc.find("./ColorPalettes")
         for e1 in list(e):
             v = Palette(xml_text=e1.text)
             self.palettes.append(v)
             e.remove(e1)
 
         self.effects = []
-        self.effects_xml_root = e = self.xml_doc.find("./EffectDB")
+        e = self.xml_doc.find("./EffectDB")
         for e1 in list(e):
             self.effects.append(e1.text)
             e.remove(e1)
 
         self.models = {}
-        self.element_effects_xml_root = e = self.xml_doc.find("./ElementEffects")
+        e = self.xml_doc.find("./ElementEffects")
         for e1 in list(e):
             if e1.attrib.get('type') == 'model':
                 model = Model(sequence=self, xml_element=e1)
@@ -324,7 +318,7 @@ class Sequence:
                 self.effects[i] = Effect(xml_text=self.effects[i])
 
 
-    def add_effect(self, model_name=None, layer_index=None, effect=None, start=None, end=None, palette=None):
+    def add_effect(self, *, model_name=None, layer_index=None, effect=None, start=None, end=None, palette=None):
         if effect not in self.effects:
             self.effects.append(effect)
 
@@ -351,38 +345,40 @@ class Sequence:
 
 
     def xml_tree(self) -> ET.ElementTree:
+        rv = copy.deepcopy(self.xml_doc)
+
         # update the sequence length
-        e = self.xml_doc.find("./head/sequenceDuration")
+        e = rv.find("./head/sequenceDuration")
         e.text = str(self.length)
 
         # add the color palettes
-        e = self.palettes_xml_root
+        e = rv.find("./ColorPalettes")
         for p in self.palettes:
             e.append(p.xml())
 
         # add the effects into the document
-        e = self.effects_xml_root
+        e = rv.find("./EffectDB")
         for f in self.effects:
             e.append(f.xml())
 
         # add the models back into the document
-        e = self.element_effects_xml_root
+        e = rv.find("./ElementEffects")
         for f in self.models.values():
             e.append(f.xml())
 
-        ET.indent(self.xml_doc, ' ', 0)
+        ET.indent(rv, ' ', 0)
         # ET.dump(doc)
-        tree = ET.ElementTree(self.xml_doc)
+        tree = ET.ElementTree(rv)
         return tree
 
 
 def main(argv):
     sequence = Sequence()
-    sequence.load("py_template.xsq")
+    sequence.load(file="py_template.xsq")
 
     effect = TextEffect(Text='3620')
     palette = Palette(colors=('#FF0000', '#00FF00'))
-    sequence.add_effect(model_name="Matrix", layer_index=1, effect=effect, palette=palette, start=0, end=10000)
+    sequence.add_effect(model_name="Matrix", layer_index=1, effect=effect, palette=palette, start=1000, end=9000)
 
     sequence.length = 10.0
     xml_tree = sequence.xml_tree()
