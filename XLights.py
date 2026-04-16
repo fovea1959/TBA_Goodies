@@ -23,7 +23,6 @@ class Palette:
         if xml_text is not None:
             for nvpair in xml_text.split(","):
                 k, v = nvpair.split('=', 1)
-                # TODO fix V here &comma;
                 m = re.match(r'^C_BUTTON_Palette(\d+)$', k)
                 if m:
                     self.colors[int(m.group(1))-1] = v
@@ -78,7 +77,7 @@ class Effect:
         self.props = {}
         for nvpair in xml_text.split(","):
             k, v = nvpair.split('=', 1)
-            # TODO handle &comma
+            v = v.replace('&comma;', ',')
             self.props[k] = v
 
     def set_prop(self, *, force=False, key=None, value=None):
@@ -367,7 +366,6 @@ class Sequence:
             e.append(f.xml())
 
         ET.indent(rv, ' ', 0)
-        # ET.dump(doc)
         tree = ET.ElementTree(rv)
         return tree
 
@@ -383,7 +381,7 @@ def main(argv):
     sequence.length = 10.0
     xml_tree = sequence.xml_tree()
     xml_tree.write('xlights_test.xsq')
-    ET.dump(xml_tree)
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
